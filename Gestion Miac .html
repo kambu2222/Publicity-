@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>GestEdu - MIAC PLUS</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Roboto, system-ui, sans-serif; margin: 0; padding: 0; }
+        body { background: #f0f7ff; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .home-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #0a2b44 0%, #1e3c72 100%); display: flex; align-items: center; justify-content: center; z-index: 2000; transition: opacity 0.5s ease; }
+        .home-content { text-align: center; color: white; padding: 20px; max-width: 90%; }
+        .home-title { font-size: 2.5rem; font-weight: 800; letter-spacing: 2px; margin-bottom: 20px; border-bottom: 2px solid #f9a825; display: inline-block; padding-bottom: 8px; }
+        .home-middle { margin: 40px 0; }
+        .school-app { font-size: 3.5rem; font-weight: 900; background: linear-gradient(135deg, #f9a825, #f57f17); -webkit-background-clip: text; background-clip: text; color: transparent; margin: 20px 0; }
+        .start-btn { background: #f9a825; border: none; padding: 15px 40px; font-size: 1.3rem; font-weight: bold; color: #1e3c72; border-radius: 50px; cursor: pointer; margin-top: 30px; transition: transform 0.2s; box-shadow: 0 8px 20px rgba(249,168,37,0.4); }
+        .start-btn:hover { transform: scale(1.05); }
+        .main-app { max-width: 1400px; margin: 0 auto; background: white; border-radius: 32px; box-shadow: 0 20px 35px -12px rgba(0,0,0,0.15); overflow: hidden; display: none; }
+
+        /* Barre principale + sous-onglets en bloc collé */
+        .sticky-header { position: sticky; top: 0; z-index: 1000; background: #2c3e50; }
+        .module-nav { padding: 8px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; background: #2c3e50; }
+        .module-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+        .module-btn { border: none; padding: 8px 18px; border-radius: 40px; font-weight: bold; cursor: pointer; transition: 0.2s; color: white; font-size: 0.9rem; }
+        .module-btn[data-module="inscription"] { background: #1e3c72; }
+        .module-btn[data-module="inscription"].active { background: #f9a825; color: #1e3c72; box-shadow: 0 0 0 3px #f9a825; }
+        .module-btn[data-module="compta"] { background: #c0392b; }
+        .module-btn[data-module="compta"].active { background: #f9a825; color: #1e3c72; box-shadow: 0 0 0 3px #f9a825; }
+        .module-btn[data-module="pedago"] { background: #2e7d32; }
+        .module-btn[data-module="pedago"].active { background: #f9a825; color: #1e3c72; box-shadow: 0 0 0 3px #f9a825; }
+        .exit-home-btn { background: #c44c4c; color: white; border: none; padding: 8px 20px; border-radius: 40px; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
+
+        .sub-tabs { display: flex; gap: 8px; padding: 6px 20px; background: #f8fafc; border-bottom: 2px solid #f9a825; flex-wrap: wrap; }
+        .sub-tab-btn { background: none; border: none; padding: 6px 14px; font-weight: 600; cursor: pointer; color: #4a5568; border-radius: 40px; transition: 0.2s; font-size: 0.9rem; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; }
+        .sub-tab-btn.active { background: #f9a825; color: #1e3c72; font-weight: 700; }
+
+        .module-container { display: none; padding: 15px 20px; background: #ffffff; max-height: calc(100vh - 130px); overflow-y: auto; }
+        .module-container.active-module { display: block; }
+
+        /* ... (le reste du style identique à la version précédente) */
+        .card { background: #f8fafc; border-radius: 20px; padding: 15px; margin-bottom: 20px; border: 1px solid #e2edf7; box-shadow: 0 4px 12px rgba(0,0,0,0.04); }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; }
+        input, select, textarea, button { border-radius: 40px; padding: 8px 14px; border: 1px solid #cbd5e1; font-size: 0.9rem; }
+        button { background: #f9a825; color: #1e3c72; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        button:hover { opacity: 0.85; transform: translateY(-1px); }
+        .btn-success { background: #2e7d32; color: white; }
+        .btn-warning { background: #f57f17; color: white; }
+        .btn-danger { background: #c44c4c; color: white; }
+        .btn-secondary { background: #4b6f8e; color: white; }
+        .btn-print { background: #6c5ce7; color: white; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; margin-top: 10px; }
+        th, td { text-align: left; padding: 10px 6px; border: 1px solid #ddd; vertical-align: middle; font-size: 0.85rem; }
+        th { background: #f9a825; color: #1e3c72; font-weight: 700; }
+        .badge { background: #fff8e1; padding: 4px 10px; border-radius: 40px; display: inline-block; margin: 2px; border: 1px solid #f9a825; color: #1e3c72; font-weight: 600; font-size: 0.8rem; }
+        .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+        .class-group { margin-bottom: 20px; border: 2px solid #f9a825; border-radius: 12px; overflow: hidden; }
+        .class-header { background: #f9a825; color: #1e3c72; padding: 10px 14px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; font-size: 0.95rem; }
+        .student-photo { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #fff8e1; border: 2px solid #f9a825; }
+        .sub-panel { display: none; animation: fade 0.2s ease; }
+        .sub-panel.active-sub { display: block; }
+        @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 4000; }
+        .modal-content { background: white; border-radius: 24px; max-width: 700px; width: 90%; padding: 20px; max-height: 80vh; overflow-y: auto; border: 2px solid #f9a825; }
+        .connection-status { position: fixed; bottom: 10px; right: 10px; background: white; padding: 5px 12px; border-radius: 40px; font-size: 0.7rem; z-index: 5000; border: 1px solid #f9a825; }
+        @media print { .module-nav, .sub-tabs, .password-overlay, .connection-status, button, .no-print { display: none !important; } }
+        .param-row { margin-bottom: 10px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .table-responsive { overflow-x: auto; }
+        .photo-preview { width: 70px; height: 70px; border-radius: 12px; object-fit: cover; margin-top: 10px; border: 2px solid #f9a825; }
+        .action-dialog { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 5000; display: none; align-items: center; justify-content: center; }
+        .action-dialog-content { background: white; border-radius: 24px; padding: 20px; text-align: center; max-width: 400px; width: 90%; border: 2px solid #f9a825; }
+        .action-dialog-content h3 { color: #1e3c72; margin-bottom: 10px; }
+        .action-dialog-content button { margin: 6px; padding: 10px 18px; font-weight: bold; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+<div class="home-screen" id="homeScreen">
+    <div class="home-content">
+        <div class="home-title">🏫 MIAC PLUS</div>
+        <div class="home-middle"><div class="school-app">SCHOOL APPLICATION</div></div>
+        <button class="start-btn" id="startAppBtn">DÉMARRAGE</button>
+    </div>
+</div>
+<div class="main-app" id="mainApp">
+    <div class="sticky-header">
+        <div class="module-nav">
+            <div class="module-buttons">
+                <button class="module-btn" data-module="inscription">📝 Inscription</button>
+                <button class="module-btn" data-module="compta">💰 Comptabilité</button>
+                <button class="module-btn" data-module="pedago">📚 Pédagogie</button>
+            </div>
+            <button class="exit-home-btn" id="exitToHomeBtn">🏠 Accueil</button>
+        </div>
+        <!-- Sous-onglets insérés dynamiquement par JS pour rester collés -->
+        <div class="sub-tabs" id="subTabsContainer"></div>
+    </div>
+
+    <!-- Conteneurs des modules (seront remplis dynamiquement) -->
+    <div id="module-inscription" class="module-container"></div>
+    <div id="module-compta" class="module-container"></div>
+    <div id="module-pedago" class="module-container"></div>
+</div>
+<div class="connection-status" id="connStatus">✅ Sauvegarde auto</div>
+<div class="modal" id="globalModal"><div class="modal-content" id="modalContent"></div></div>
+<div class="action-dialog" id="paymentActionDialog"><div class="action-dialog-content" id="paymentActionContent"></div></div>
+
+<script>
+    (function(){
+        const STORAGE_KEY = 'miacplus_pro_v5';
+        let state = {
+            students: [],
+            staffMembers: [],
+            payments: [],
+            logistics: [],
+            transports: [],
+            otherExpenses: [],
+            individualPayrollRecords: [],
+            staffPaymentsHistory: [],
+            dailyReportsArchive: [],
+            messages: [],
+            staffCommunications: [],
+            grades: [],
+            courses: [{name:"Mathématiques",max:20,coef:2},{name:"Français",max:20,coef:1}],
+            reportsArchive: [],
+            exchangeRate: 2500,
+            defaultAnnualFees: 350,
+            promoteurPhone: '',
+            lastMsgNum: 0,
+            modulePasswords: { inscription: "1234", compta: "1234", pedago: "1234" }
+        };
+        let unlockedModules = { inscription: false, compta: false, pedago: false };
+        // Classes étendues (maternelle, primaire, secondaire)
+        const classList = ["1ère Maternelle","2ème Maternelle","3ème Maternelle","1ère Primaire","2ème Primaire","3ème Primaire","4ème Primaire","5ème Primaire","6ème Primaire","7ème","8ème","1ère Secondaire","2ème Secondaire","3ème Secondaire","4ème Secondaire"];
+        let capturedPhotoData = null, currentModule = null;
+
+        function saveAll() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            document.getElementById('connStatus').innerHTML = '✅ Sauvegarde ' + new Date().toLocaleTimeString();
+        }
+        function loadAll() {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if(saved) { try { Object.assign(state, JSON.parse(saved)); } catch(e){} }
+            if(!state.courses.length) state.courses = [{name:"Mathématiques",max:20,coef:2},{name:"Français",max:20,coef:1}];
+        }
+        function sendWhatsApp(phone, msg) { if(!phone) return; let clean = phone.replace(/\s/g,''); if(!clean.startsWith('+')) clean='+'+clean; window.open(`https://wa.me/${clean}?text=${encodeURIComponent(msg)}`,'_blank'); }
+        function convertToUSD(amt, curr) { return curr === 'USD' ? amt : amt / state.exchangeRate; }
+        function showLoader() { const l=document.getElementById('globalLoader'); if(l) l.classList.add('active'); setTimeout(()=> { if(l) l.classList.remove('active'); }, 400); }
+        function formatDateFR(d){ return new Date(d).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'}); }
+        function formatDateTimeFR(d){ return new Date(d).toLocaleString('fr-FR',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+
+        function generateProfessionalHeader(title, subtitle='') {
+            return `<div style="text-align:center;border-bottom:3px solid #f9a825;padding-bottom:15px;margin-bottom:20px;">
+                <h1 style="color:#1e3c72;margin:0;">🏫 MIAC PLUS</h1>
+                <h2 style="color:#f57f17;margin:5px 0;">${title}</h2>
+                ${subtitle?`<p style="color:#555;">${subtitle}</p>`:''}
+                <p style="font-size:0.9rem;color:#777;">${formatDateTimeFR(new Date())}</p>
+            </div>`;
+        }
+
+        function printWithHeader(title, contentHtml) {
+            let w = window.open('', '_blank');
+            let fullHtml = `<html><head><title>${title}</title><style>body{font-family:'Segoe UI',sans-serif;padding:30px;} h1{color:#1e3c72;} .header{text-align:center;border-bottom:3px solid #f9a825;padding-bottom:15px;margin-bottom:20px;} .header h2{color:#f57f17;} table{border-collapse:collapse;width:100%;margin-top:20px;} th,td{border:1px solid #ccc;padding:8px;text-align:left;} th{background:#f9a825;color:#1e3c72;} .footer{margin-top:30px;font-size:0.8rem;color:#777;}</style></head><body>${generateProfessionalHeader(title)}${contentHtml}<div class="footer"><p>Document généré automatiquement - MIAC PLUS © ${new Date().getFullYear()}</p><p style="margin-top:20px;"><button onclick="window.print();setTimeout(()=>window.close(),500)">🖨️ Imprimer</button></p></div></body></html>`;
+            w.document.write(fullHtml);
+            w.document.close();
+        }
+
+        function requestPassword(moduleName, callback) {
+            const modal = document.getElementById('globalModal');
+            document.getElementById('modalContent').innerHTML = `<div style="text-align:center;"><h3 style="color:#1e3c72;">🔐 Module ${moduleName.charAt(0).toUpperCase()+moduleName.slice(1)}</h3><p>Mot de passe</p><input type="password" id="pwdInput" autocomplete="off" style="width:100%;padding:12px;border-radius:40px;border:1px solid #ccc;font-size:1rem;text-align:center;"><div style="margin-top:20px;"><button id="pwdOkBtn" style="background:#f9a825;color:#1e3c72;padding:12px 30px;font-weight:bold;">✅ Valider</button><button id="pwdCancelBtn" style="background:#ccc;color:#333;padding:12px 30px;">Annuler</button></div></div>`;
+            modal.style.display = 'flex';
+            document.getElementById('pwdInput').focus();
+            document.getElementById('pwdOkBtn').onclick = () => {
+                let pwd = document.getElementById('pwdInput').value;
+                if(pwd === state.modulePasswords[moduleName]) { unlockedModules[moduleName] = true; modal.style.display = 'none'; showLoader(); callback(true); }
+                else { alert("❌ Mot de passe incorrect"); modal.style.display = 'none'; callback(false); }
+            };
+            document.getElementById('pwdCancelBtn').onclick = () => { modal.style.display = 'none'; callback(false); };
+        }
+
+        function showModule(moduleId) {
+            if(currentModule === moduleId && unlockedModules[moduleId]) { setActiveModule(moduleId); return; }
+            requestPassword(moduleId, (ok) => { if(ok) setActiveModule(moduleId); });
+        }
+
+        function setActiveModule(moduleId) {
+            document.querySelectorAll('.module-container').forEach(m => m.classList.remove('active-module'));
+            document.getElementById(`module-${moduleId}`).classList.add('active-module');
+            document.querySelectorAll('.module-btn').forEach(btn => btn.classList.remove('active'));
+            const targetBtn = document.querySelector(`.module-btn[data-module="${moduleId}"]`);
+            if(targetBtn) targetBtn.classList.add('active');
+            currentModule = moduleId;
+            renderSubTabs(moduleId);
+            if(moduleId === 'inscription') renderInscriptionAll();
+            else if(moduleId === 'compta') renderComptaAll();
+            else if(moduleId === 'pedago') renderPedagoAll();
+        }
+
+        function getTotalPaidByStudent(id) { return state.payments.filter(p=>p.studentId===id).reduce((s,p)=>s+p.amountUSD,0); }
+
+        // Gestion des sous-onglets dynamiques
+        function renderSubTabs(module) {
+            const container = document.getElementById('subTabsContainer');
+            let tabs = '';
+            if(module === 'inscription') {
+                tabs = `<button class="sub-tab-btn active" data-sub-ins="classes">📋 Classes</button>
+                        <button class="sub-tab-btn" data-sub-ins="form">✍️ Inscrire</button>
+                        <button class="sub-tab-btn" data-sub-ins="liste">📜 Liste</button>
+                        <button class="sub-tab-btn" data-sub-ins="comm">📱 Parents</button>
+                        <button class="sub-tab-btn" data-sub-ins="personnel">👥 Perso.</button>
+                        <button class="sub-tab-btn" data-sub-ins="params">⚙️ Param.</button>`;
+            } else if(module === 'compta') {
+                tabs = `<button class="sub-tab-btn active" data-sub-compta="param">⚙️ Param.</button>
+                        <button class="sub-tab-btn" data-sub-compta="eleves">📚 Élèves</button>
+                        <button class="sub-tab-btn" data-sub-compta="personnel">👥 Personnel</button>
+                        <button class="sub-tab-btn" data-sub-compta="paiement-personnel">💵 Paie pers.</button>
+                        <button class="sub-tab-btn" data-sub-compta="paiement">💳 Paiements</button>
+                        <button class="sub-tab-btn" data-sub-compta="depenses">📦 Dépenses</button>
+                        <button class="sub-tab-btn" data-sub-compta="rapport">📊 Rapport</button>
+                        <button class="sub-tab-btn" data-sub-compta="archives">📁 Archives</button>`;
+            } else if(module === 'pedago') {
+                tabs = `<button class="sub-tab-btn active" data-sub-ped="notes">✏️ Notes</button>
+                        <button class="sub-tab-btn" data-sub-ped="synthese">📈 Synthèse</button>
+                        <button class="sub-tab-btn" data-sub-ped="archives">📦 Archives</button>
+                        <button class="sub-tab-btn" data-sub-ped="resultats">📜 Résultats</button>
+                        <button class="sub-tab-btn" data-sub-ped="listeEleves">📋 Élèves</button>
+                        <button class="sub-tab-btn" data-sub-ped="listePers">👥 Personnel</button>`;
+            }
+            container.innerHTML = tabs;
+            attachSubTabEvents(module);
+        }
+
+        function attachSubTabEvents(module) {
+            if(module === 'inscription') {
+                document.querySelectorAll('#subTabsContainer .sub-tab-btn').forEach(btn=>btn.addEventListener('click',()=>{
+                    let target=btn.dataset.subIns;
+                    document.querySelectorAll('#subTabsContainer .sub-tab-btn').forEach(b=>b.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.querySelectorAll('#module-inscription .sub-panel').forEach(p=>p.classList.remove('active-sub'));
+                    document.getElementById(`ins-${target}`).classList.add('active-sub');
+                }));
+            } else if(module === 'compta') {
+                document.querySelectorAll('#subTabsContainer .sub-tab-btn').forEach(btn=>btn.addEventListener('click',()=>{
+                    let target=btn.dataset.subCompta;
+                    document.querySelectorAll('#subTabsContainer .sub-tab-btn').forEach(b=>b.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.querySelectorAll('#module-compta .sub-panel').forEach(p=>p.classList.remove('active-sub'));
+                    document.getElementById(`compta-${target}`).classList.add('active-sub');
+                }));
+            } else if(module === 'pedago') {
+                document.querySelectorAll('#subTabsContainer .sub-tab-btn').forEach(btn=>btn.addEventListener('click',()=>{
+                    let target=btn.dataset.subPed;
+                    document.querySelectorAll('#subTabsContainer .sub-tab-btn').forEach(b=>b.classList.remove('active'));
+                    btn.classList.add('active');
+                    document.querySelectorAll('#module-pedago .sub-panel').forEach(p=>p.classList.remove('active-sub'));
+                    document.getElementById(`ped-${target}`).classList.add('active-sub');
+                }));
+            }
+        }
+
+        // Construction des panneaux (similaire à avant, mais générés dynamiquement pour propreté)
+        function buildInscriptionHTML() {
+            return `
+            <div id="ins-classes" class="sub-panel active-sub"><div class="card"><h3>Niveaux</h3><div id="dynamicClassList"></div></div></div>
+            <div id="ins-form" class="sub-panel"><div class="card"><h3>Inscription élève</h3><div class="grid-2"><div><label>Nom complet</label><input type="text" id="studentName" placeholder="NOM Prénom"><label>Sexe</label><select id="studentSexe"><option value="M">Masculin</option><option value="F">Féminin</option></select><label>Classe</label><select id="studentClass"></select><label>Option</label><input type="text" id="studentOption"></div><div><label>📞 Tél Parent</label><input type="tel" id="parentPhone"><label>Nom parent</label><input type="text" id="parentName"><label>Adresse</label><input type="text" id="parentAddress"><label>💰 Frais annuels (USD)</label><input type="number" id="totalFees"></div></div><div style="margin:10px 0;"><label>📷 Photo</label><input type="file" id="studentPhotoFile" accept="image/*"><div id="photoPreview"></div></div><div style="display:flex; gap:10px; flex-wrap:wrap;"><button id="submitInscriptionBtn" class="btn-success">📝 Inscrire</button><button id="sendToParentBtn" class="btn-secondary">💬 WhatsApp</button><button id="printInscriptionBtn" class="btn-print">🖨️ Imprimer</button></div></div></div>
+            <div id="ins-liste" class="sub-panel"><div class="card"><div class="flex-between"><h3>Effectifs par classe</h3><button id="printAllClassesBtn" class="btn-print">🖨️ Imprimer</button></div><div id="groupedStudentList"></div><div id="totalGeneralEffectif" style="margin-top:8px;"></div></div></div>
+            <div id="ins-comm" class="sub-panel"><div class="card"><div class="flex-between"><h3>📨 Message aux parents</h3><div><button id="selectAllParentsBtn" class="btn-secondary">✅ Tous</button><button id="deselectAllParentsBtn" class="btn-secondary">❌ Aucun</button></div></div><select id="messageType"><option>📢 COMMUNIQUÉ</option><option>📋 AVIS</option><option>📅 CONVOCATION</option></select><input type="text" id="messageSubject" placeholder="Objet"><textarea id="commMessage" rows="2" placeholder="Message..."></textarea><div id="parentsListCheckboxes" style="max-height:150px; overflow-y:auto; border:1px solid #ccc; border-radius:12px; padding:8px; margin:8px 0;"></div><button id="sendMassWhatsAppBtn" class="btn-success">📲 Envoyer</button><button id="printMessageBtn" class="btn-print">🖨️ Imprimer</button><h3>📜 Historique</h3><div id="messageHistoryContainer"></div><button id="clearMessagesBtn" class="btn-danger">🗑️ Vider</button></div></div>
+            <div id="ins-personnel" class="sub-panel"><div class="card"><div class="flex-between"><h3>👥 Personnel</h3><button id="openAddStaffBtn" class="btn-secondary">+ Ajouter</button></div><div id="addStaffForm" style="display:none;" class="grid-2"><input type="text" id="staffName" placeholder="Nom"><select id="staffCategory"><option>enseignant</option><option>administratif</option><option>autre</option></select><input type="text" id="staffRole" placeholder="Fonction"><input type="tel" id="staffPhone" placeholder="Tél"><input type="number" id="staffSalary" placeholder="Salaire (USD)"><button id="saveStaffBtn" class="btn-success">💾 Enregistrer</button><button id="cancelStaffBtn" class="btn-secondary">Annuler</button></div><div id="staffListContainer"></div><h3>📢 Communiqué interne</h3><select id="commInterneType"><option>📢 GÉNÉRAL</option><option>⚰️ NÉCROLOGIQUE</option><option>⚽ FOOTBALL</option><option>💰 PAIEMENT</option></select><input type="text" id="commInterneObjet" placeholder="Objet"><textarea id="commInterneMessage" rows="2" placeholder="Message..."></textarea><div id="staffCheckboxesList" style="max-height:120px; overflow-y:auto; border:1px solid #ccc; padding:8px; margin:8px 0;"></div><div class="flex-between"><button id="sendStaffWhatsAppBtn" class="btn-success">📲 Envoyer</button><button id="printStaffCommBtn" class="btn-print">🖨️ Imprimer</button><button id="selectAllStaffBtn" class="btn-secondary">✅ Tous</button><button id="deselectAllStaffBtn" class="btn-secondary">❌ Aucun</button></div><h3>📜 Historique</h3><div id="staffCommHistoryList"></div><button id="clearStaffCommHistoryBtn" class="btn-danger">🗑️ Vider</button></div></div>
+            <div id="ins-params" class="sub-panel"><div class="card"><h3>⚙️ Paramètres & Mots de passe</h3><div class="param-row"><label>Taux USD→CDF</label><input type="number" id="exchangeRateInput" step="5" style="width:120px;"><button id="saveExchangeRateBtn">💾</button></div><div class="param-row"><label>Frais défaut (USD)</label><input type="number" id="globalDefaultFees" style="width:120px;"><button id="saveDefaultFeesBtn">💾</button></div><div class="param-row"><label>Tel promoteur</label><input type="tel" id="globalPromoteurPhone" style="width:150px;"><button id="savePromoteurPhoneBtn">💾</button></div><hr><h4>🔐 Changer mots de passe</h4><div class="param-row"><label>Inscription</label><input type="password" id="newPwdInscription" style="width:130px;"><button id="changePwdInscription">Modifier</button></div><div class="param-row"><label>Comptabilité</label><input type="password" id="newPwdCompta" style="width:130px;"><button id="changePwdCompta">Modifier</button></div><div class="param-row"><label>Pédagogie</label><input type="password" id="newPwdPedago" style="width:130px;"><button id="changePwdPedago">Modifier</button></div></div></div>`;
+        }
+        function buildComptaHTML() {
+            return `
+            <div id="compta-param" class="sub-panel active-sub"><div class="card"><h3>Configuration</h3><div class="param-row"><label>Taux</label><input type="number" id="exchangeRateCompta" style="width:120px;"><button id="saveExchangeRateCompta">💾</button></div><div class="param-row"><label>Frais défaut</label><input type="number" id="defaultAnnualFeesCompta" style="width:120px;"><button id="saveDefaultFeesCompta">💾</button></div><div class="param-row"><label>Tel promoteur</label><input type="tel" id="promoteurPhoneCompta" style="width:150px;"><button id="savePromoteurCompta">💾</button></div></div></div>
+            <div id="compta-eleves" class="sub-panel"><div class="card"><h3>Suivi financier</h3><button id="printStudentListCompta" class="btn-print">🖨️ Imprimer</button><div id="groupedStudentListCompta"></div><div id="totalEffectifCompta" style="margin-top:8px;"></div></div></div>
+            <div id="compta-personnel" class="sub-panel"><div class="card"><h3>Liste personnel</h3><button id="printStaffListCompta" class="btn-print">🖨️ Imprimer</button><div id="staffListCompta"></div><div id="staffPaymentHistoryCompta"></div></div></div>
+            <div id="compta-paiement-personnel" class="sub-panel"><div class="card"><h3>💰 Paiements individuels</h3><div id="staffPayrollTableContainer" class="table-responsive"></div><div id="staffPayrollHistoryContainer" class="table-responsive" style="margin-top:15px;"></div></div></div>
+            <div id="compta-paiement" class="sub-panel"><div class="card"><h3>Encaissement élèves</h3><div class="grid-2"><select id="paymentClassSelect"></select><input type="text" id="searchStudent" placeholder="Chercher élève"></div><select id="paymentStudentSelect" size="5" style="width:100%;"></select><div class="grid-2" style="margin-top:8px;"><select id="currencyType"><option>USD</option><option>CDF</option></select><input type="number" id="paymentAmountLocal" placeholder="Montant"><input type="date" id="paymentDate"><input type="text" id="paymentDesc" placeholder="Rubrique"></div><button id="recordPaymentBtn" class="btn-success">Enregistrer</button><h3>Historique</h3><button id="printPaymentsHistoryBtn" class="btn-print">🖨️ Imprimer</button><div id="paymentHistoryList" class="table-responsive"></div></div></div>
+            <div id="compta-depenses" class="sub-panel"><div class="card"><h3>📦 Dépenses & Logistique</h3><h4>Logistique</h4><div class="grid-2"><input type="text" id="logItem" placeholder="Article"><select id="logType"><option>ENTREE</option><option>SORTIE</option></select><input type="number" id="logQty" placeholder="Qté"><input type="number" id="logPrice" placeholder="Prix unit. USD"></div><button id="addLogBtn" class="btn-success">Ajouter</button><div id="logisticsTableContainer"></div><h4>Transport</h4><div class="grid-2"><input type="text" id="transportName" placeholder="Nom"><select id="transportCurrency"><option>USD</option><option>CDF</option></select><input type="number" id="transportAmount" placeholder="Montant"><input type="date" id="transportDate"></div><button id="addTransportBtn" class="btn-success">Ajouter</button><div id="transportTableContainer"></div><div>Total: <strong id="totalTransports">0</strong> USD</div><h4>Autres dépenses</h4><div class="grid-2"><input type="text" id="expenseMotif" placeholder="Motif"><select id="expenseCurrency"><option>USD</option><option>CDF</option></select><input type="number" id="expenseAmount" placeholder="Montant"><input type="date" id="expenseDate"></div><button id="addExpenseBtn" class="btn-success">Ajouter</button><div id="expenseTableContainer"></div><div>Total: <strong id="totalExpenses">0</strong> USD</div></div></div>
+            <div id="compta-rapport" class="sub-panel"><div class="card"><h3>Rapport journalier</h3><div id="caisseSituation"></div><button id="sendManualReportBtn" class="btn-warning">📨 Envoyer au promoteur</button><div id="dailyReportTableContainer"></div></div></div>
+            <div id="compta-archives" class="sub-panel"><div class="card"><h3>Archives rapports</h3><div id="dailyArchivesList"></div><button id="clearArchivesBtn" class="btn-danger">Vider</button><button id="printArchivesBtn" class="btn-print">🖨️ Imprimer</button></div></div>`;
+        }
+        function buildPedagoHTML() {
+            return `
+            <div id="ped-notes" class="sub-panel active-sub"><div class="card"><h3>Saisie notes</h3><div class="grid-2"><select id="gradeClassSelect"></select><select id="gradePeriodSelect"><option value="interro1">1ère interro</option><option value="interro2">2ème interro</option><option value="examen1">Examen 1er trim</option><option value="interro3">3ème interro</option><option value="examen2">Examen 2ème trim</option><option value="examenFin">Examen final</option></select><button id="loadGradeTableBtn" class="btn-secondary">Charger</button></div><div id="courseManagement"><h4>Cours & coefficients</h4><div id="coursesList"></div><div class="grid-2"><input type="text" id="newCourseName" placeholder="Cours"><input type="number" id="newCourseMax" value="20" placeholder="Max"><input type="number" id="newCourseCoef" value="1" placeholder="Coef"><button id="addCourseBtn" class="btn-secondary">+ Cours</button></div></div><div id="gradeTableContainer" class="table-responsive"></div><button id="validateGradesBtn" class="btn-success">✅ Valider</button><button id="archiveCurrentPeriodBtn" class="btn-warning">📦 Archiver</button></div></div>
+            <div id="ped-synthese" class="sub-panel"><div class="card"><h3>Synthèse détaillée</h3><div class="grid-2"><select id="synthClassSelect"></select><select id="synthPeriodSelect"><option value="interro1">1ère interro</option><option value="interro2">2ème interro</option><option value="examen1">Examen 1er trim</option><option value="interro3">3ème interro</option><option value="examen2">Examen 2ème trim</option><option value="examenFin">Examen final</option></select><button id="showFullSynthBtn" class="btn-secondary">Afficher</button><button id="printFullSynthBtn" class="btn-print">🖨️ Imprimer</button></div><div id="fullSynthResultArea" class="table-responsive"></div></div></div>
+            <div id="ped-archives" class="sub-panel"><div class="card"><h3>Archives pédagogiques</h3><div id="reportsArchiveList"></div><button id="clearAllReportsBtn" class="btn-danger">Vider</button></div></div>
+            <div id="ped-resultats" class="sub-panel"><div class="card"><h3>Résultats par classe</h3><select id="resultClassSelect"></select><select id="resultPeriodSelect"><option value="interro1">1ère interro</option><option value="interro2">2ème interro</option><option value="examen1">Examen 1er trim</option><option value="interro3">3ème interro</option><option value="examen2">Examen 2ème trim</option><option value="examenFin">Examen final</option></select><button id="showResultsBtn" class="btn-secondary">Afficher</button><button id="printResultsBtn" class="btn-print">🖨️ Imprimer</button><div id="resultsDisplayArea" class="table-responsive"></div></div></div>
+            <div id="ped-listeEleves" class="sub-panel"><div class="card"><h3>Liste élèves</h3><button id="printPedagoStudentsBtn" class="btn-print">🖨️ Imprimer</button><div id="groupedStudentListPedago"></div></div></div>
+            <div id="ped-listePers" class="sub-panel"><div class="card"><h3>Personnel</h3><button id="printPedagoStaffBtn" class="btn-print">🖨️ Imprimer</button><div id="staffListPedago"></div></div></div>`;
+        }
+
+        // Initialisation des modules HTML
+        document.getElementById('module-inscription').innerHTML = buildInscriptionHTML();
+        document.getElementById('module-compta').innerHTML = buildComptaHTML();
+        document.getElementById('module-pedago').innerHTML = buildPedagoHTML();
+
+        // ... (les fonctions de rendu inscription, compta, pedago restent identiques, adaptées avec les nouveaux ID)
+
+        function showPaymentActionDialog(payment) {
+            const dialog = document.getElementById('paymentActionDialog');
+            const content = document.getElementById('paymentActionContent');
+            const student = state.students.find(s=>s.id===payment.studentId);
+            content.innerHTML = `
+                <h3 style="color:#1e3c72;">✅ Paiement enregistré</h3>
+                <p><strong>${student?.name||'?'}</strong> - ${payment.amountUSD.toFixed(2)} USD</p>
+                <p>${payment.description||'Frais'}</p>
+                <div style="margin-top:12px;display:flex;flex-direction:column;gap:6px;">
+                    <button id="actionCancelPayment" style="background:#c44c4c;color:white;">❌ Annuler ce paiement</button>
+                    <button id="actionSendProof" style="background:#25D366;color:white;">📲 Preuve WhatsApp</button>
+                    <button id="actionPrintReceipt" style="background:#6c5ce7;color:white;">🖨️ Imprimer reçu</button>
+                    <button id="actionClose" style="background:#ccc;color:#333;">Fermer</button>
+                </div>`;
+            dialog.style.display = 'flex';
+            document.getElementById('actionClose').onclick = () => { dialog.style.display = 'none'; };
+            document.getElementById('actionCancelPayment').onclick = () => {
+                if(confirm("Annuler ce paiement ?")) {
+                    state.payments = state.payments.filter(p=>p.id!==payment.id);
+                    saveAll(); renderComptaAll(); dialog.style.display = 'none';
+                }
+            };
+            document.getElementById('actionSendProof').onclick = () => {
+                if(student && student.parentPhone) {
+                    let msg = `🏫 *MIAC PLUS* - REÇU DE PAIEMENT\n──────────────────────\n📅 ${payment.date}\n👤 ${student.name}\n📚 ${student.class}\n💵 ${payment.amountUSD.toFixed(2)} USD\n📝 ${payment.description||'Frais'}\n──────────────────────\n✅ Payé. Merci.\n*La Direction*`;
+                    sendWhatsApp(student.parentPhone, msg);
+                } else alert("Numéro parent manquant.");
+            };
+            document.getElementById('actionPrintReceipt').onclick = () => {
+                let receipt = `<table><tr><td>Élève</td><td>${student?.name||'?'}</td></tr><tr><td>Classe</td><td>${student?.class||'?'}</td></tr><tr><td>Date</td><td>${payment.date}</td></tr><tr><td>Montant</td><td>${payment.amountUSD.toFixed(2)} USD</td></tr><tr><td>Rubrique</td><td>${payment.description||'-'}</td></tr></table><p style="margin-top:20px;">Signature : _______________</p>`;
+                printWithHeader("Reçu de paiement", receipt);
+            };
+        }
+
+        // ========== RENDU INSCRIPTION ==========
+        function renderInscriptionAll() {
+            document.getElementById('dynamicClassList').innerHTML = classList.map(c=>`<span class="badge">${c}</span>`).join('');
+            document.getElementById('studentClass').innerHTML = classList.map(c=>`<option>${c}</option>`).join('');
+            renderStudentListIns();
+            renderParentsListCheckboxes();
+            renderMessageHistory();
+            renderStaffListIns();
+            renderStaffCheckboxesIns();
+            renderStaffCommHistory();
+            document.getElementById('exchangeRateInput').value = state.exchangeRate;
+            document.getElementById('globalDefaultFees').value = state.defaultAnnualFees;
+            document.getElementById('globalPromoteurPhone').value = state.promoteurPhone;
+        }
+        function renderStudentListIns() {
+            let html='', total=0;
+            for(let cls of classList){
+                let arr = state.students.filter(s=>s.class===cls);
+                if(arr.length){
+                    total+=arr.length;
+                    html+=`<div class="class-group"><div class="class-header">${cls} (${arr.length}) <button class="print-class-ins btn-secondary" data-class="${cls}">🖨️</button></div>
+                    <div class="table-responsive"><table><thead><tr><th>Photo</th><th>Nom</th><th>Sexe</th><th>Option</th><th>Parent</th><th>Tél</th><th></th></tr></thead><tbody>
+                    ${arr.map(s=>`<tr><td>${s.photo ? `<img src="${s.photo}" class="student-photo">` : '📷'}</td><td>${s.name}</td><td>${s.sexe||'M'}</td><td>${s.option||'-'}</td><td>${s.parentName||'-'}</td><td>${s.parentPhone||'-'}</td><td><button class="del-student-ins" data-id="${s.id}" style="background:#c44c4c;">🗑️</button></td></tr>`).join('')}
+                    </tbody></table></div></div>`;
+                }
+            }
+            document.getElementById('groupedStudentList').innerHTML = html||'<p>Aucun élève</p>';
+            document.getElementById('totalGeneralEffectif').innerHTML = `<strong>Total: ${total} élèves</strong>`;
+            document.querySelectorAll('.del-student-ins').forEach(btn=>btn.addEventListener('click',()=>{
+                if(confirm("Supprimer ?")){ let id=parseInt(btn.dataset.id); state.students=state.students.filter(s=>s.id!==id); state.payments=state.payments.filter(p=>p.studentId!==id); state.grades=state.grades.filter(g=>g.studentId!==id); saveAll(); renderInscriptionAll(); renderComptaAll(); renderPedagoAll(); }
+            }));
+            document.querySelectorAll('.print-class-ins').forEach(btn=>btn.addEventListener('click',()=>{
+                let cls=btn.dataset.class; let list=state.students.filter(s=>s.class===cls);
+                let tbl=`<table><thead><tr><th>Photo</th><th>Nom</th><th>Sexe</th><th>Parent</th><th>Tél</th></tr></thead><tbody>${list.map(s=>`<tr><td>${s.photo?'✓':'📷'}</td><td>${s.name}</td><td>${s.sexe}</td><td>${s.parentName}</td><td>${s.parentPhone}</td></tr>`).join('')}</tbody></table>`;
+                printWithHeader(`Liste ${cls}`, tbl);
+            }));
+        }
+        function renderParentsListCheckboxes() { let div = document.getElementById('parentsListCheckboxes'); if(div) div.innerHTML = state.students.map(s => `<label><input type="checkbox" class="parent-cb" data-phone="${s.parentPhone}"> ${s.name} (${s.parentPhone||'?'})</label><br>`).join('') || 'Aucun'; }
+        function renderMessageHistory() { let cont=document.getElementById('messageHistoryContainer'); if(cont) cont.innerHTML = state.messages.length ? `<table><thead><tr><th>N°</th><th>Date</th><th>Type</th><th>Objet</th><th></th></tr></thead><tbody>${state.messages.slice().reverse().map((m,i)=>`<tr><td>${m.num}</td><td>${formatDateFR(m.date)}</td><td>${m.type}</td><td>${m.subject||'-'}</td><td><button class="del-msg" data-idx="${state.messages.length-1-i}">🗑️</button></td></tr>`).join('')}</tbody></table>`:'<p>Aucun message</p>'; document.querySelectorAll('.del-msg').forEach(btn=>btn.addEventListener('click',()=>{ state.messages.splice(parseInt(btn.dataset.idx),1); saveAll(); renderMessageHistory(); })); }
+        function renderStaffListIns(){ let cont=document.getElementById('staffListContainer'); if(cont) cont.innerHTML = state.staffMembers.length ? `<table><thead><tr><th>Nom</th><th>Catégorie</th><th>Fonction</th><th>Tél</th><th>Salaire</th><th></th></tr></thead><tbody>${state.staffMembers.map((s,i)=>`<tr><td>${s.name}</td><td>${s.category}</td><td>${s.role||'-'}</td><td>${s.phone||'-'}</td><td>${s.salary||0}</td><td><button class="del-staff-ins" data-idx="${i}">🗑️</button></td></tr>`).join('')}</tbody></table>`:'<p>Aucun</p>'; document.querySelectorAll('.del-staff-ins').forEach(btn=>btn.addEventListener('click',()=>{ state.staffMembers.splice(parseInt(btn.dataset.idx),1); saveAll(); renderInscriptionAll(); renderComptaAll(); renderPedagoAll(); })); }
+        function renderStaffCheckboxesIns(){ let div=document.getElementById('staffCheckboxesList'); if(div) div.innerHTML=state.staffMembers.map(s=>`<label><input type="checkbox" class="staff-cb-ins" data-phone="${s.phone}"> ${s.name}</label><br>`).join('')||'Aucun'; }
+        function renderStaffCommHistory(){ let div=document.getElementById('staffCommHistoryList'); if(div) div.innerHTML=state.staffCommunications.slice().reverse().map(c=>`<span class="badge">${formatDateFR(c.date)} - ${c.type}</span>`).join('')||'Aucun'; }
+
+        // ========== COMPTABILITÉ ==========
+        function renderComptaAll() {
+            document.getElementById('exchangeRateCompta').value = state.exchangeRate;
+            document.getElementById('defaultAnnualFeesCompta').value = state.defaultAnnualFees;
+            document.getElementById('promoteurPhoneCompta').value = state.promoteurPhone;
+            renderStudentListComptaDetail();
+            renderStaffListComptaTable();
+            renderStaffPayrollTable(); renderStaffPayrollHistory();
+            renderPaymentClassFilter(); renderPaymentHistory(); renderCaisseSituation();
+            renderLogisticsTable(); renderTransportTable(); renderExpenseTable(); renderDailyReportTable(); renderArchivesCompta();
+        }
+        function renderStudentListComptaDetail() { let html='', totalFrais=0, totalPaye=0; for(let cls of classList){ let arr=state.students.filter(s=>s.class===cls); if(arr.length){ html+=`<div class="class-group"><div class="class-header">${cls}</div><div class="table-responsive"><table><thead><tr><th>Photo</th><th>Nom</th><th>Frais</th><th>Payé</th><th>Reste</th><th></th></tr></thead><tbody>`; arr.forEach(s=>{ let frais=s.totalFees||state.defaultAnnualFees, paye=getTotalPaidByStudent(s.id), reste=frais-paye; totalFrais+=frais; totalPaye+=paye; html+=`<tr><td>${s.photo?`<img src="${s.photo}" class="student-photo">`:'📷'}</td><td>${s.name}</td><td>${frais.toFixed(2)}</td><td>${paye.toFixed(2)}</td><td>${reste.toFixed(2)}</td><td><button class="view-payments" data-id="${s.id}">💰</button></td></tr>`; }); html+=`</tbody></table></div></div>`; } } document.getElementById('groupedStudentListCompta').innerHTML=html||'<p>Aucun</p>'; document.getElementById('totalEffectifCompta').innerHTML=`Total: ${state.students.length} élèves | Frais: ${totalFrais.toFixed(2)} | Payé: ${totalPaye.toFixed(2)}`; document.querySelectorAll('.view-payments').forEach(btn=>btn.addEventListener('click',()=>{ let sid=parseInt(btn.dataset.id); let s=state.students.find(s=>s.id===sid); let pList=state.payments.filter(p=>p.studentId===sid); let tbl=`<table><thead><tr><th>Date</th><th>USD</th><th>Rubrique</th></tr></thead><tbody>${pList.map(p=>`<tr><td>${p.date}</td><td>${p.amountUSD.toFixed(2)}</td><td>${p.description||'-'}</td></tr>`).join('')}</tbody></table>`; document.getElementById('modalContent').innerHTML=`<h3>${s?.name}</h3>${tbl}<p>Total: ${getTotalPaidByStudent(sid).toFixed(2)} USD</p><button id="closeModalBtn">Fermer</button>`; document.getElementById('globalModal').style.display='flex'; document.getElementById('closeModalBtn').onclick=()=>document.getElementById('globalModal').style.display='none'; })); }
+        function renderStaffListComptaTable(){ document.getElementById('staffListCompta').innerHTML = state.staffMembers.length?`<table><thead><tr><th>Nom</th><th>Fonction</th><th>Salaire</th></tr></thead><tbody>${state.staffMembers.map(s=>`<tr><td>${s.name}</td><td>${s.role||s.category}</td><td>${s.salary||0}</td></tr>`).join('')}</tbody></table>`:'<p>Aucun</p>'; }
+        function renderStaffPayrollTable() { let container=document.getElementById('staffPayrollTableContainer'); if(!container) return; const month=new Date().toISOString().slice(0,7); let html=`<h4>Mois ${month}</h4><table><thead><tr><th>Nom</th><th>Brut</th><th>Avance</th><th>Net</th><th></th></tr></thead><tbody>`; state.staffMembers.forEach(staff=>{ let rec=state.individualPayrollRecords.find(r=>r.staffId===staff.id&&r.month===month); let brut=staff.salary||0, avance=rec?rec.avance:0, net=brut-avance; html+=`<tr><td>${staff.name}</td><td>${brut}</td><td><input type="number" id="adv_${staff.id}" value="${avance}" ${rec?'disabled':''}></td><td>${net}</td><td>`; if(!rec) html+=`<button class="pay-staff-btn" data-id="${staff.id}">💰 Payer</button>`; else html+=`<button class="print-bulletin-btn" data-id="${staff.id}" data-month="${month}">🖨️</button> <button class="whatsapp-bulletin-btn" data-id="${staff.id}" data-month="${month}">📲</button> <button class="delete-payroll-btn" data-id="${staff.id}" data-month="${month}">🗑️</button>`; html+=`</td></tr>`; }); html+=`</tbody></table><button id="bulkPayBtn" class="btn-success">✅ Payer tous</button>`; container.innerHTML=html; document.querySelectorAll('.pay-staff-btn').forEach(btn=>btn.addEventListener('click',()=>{ let sid=parseInt(btn.dataset.id), staff=state.staffMembers.find(s=>s.id===sid); if(!staff) return; let adv=parseFloat(document.getElementById(`adv_${sid}`).value)||0; state.individualPayrollRecords.push({staffId:sid,month,brut:staff.salary,avance:adv,net:staff.salary-adv,paidDate:new Date().toISOString().slice(0,10)}); saveAll(); renderComptaAll(); })); document.querySelectorAll('.print-bulletin-btn').forEach(btn=>btn.addEventListener('click',()=>{ let sid=parseInt(btn.dataset.id), month=btn.dataset.month; let staff=state.staffMembers.find(s=>s.id===sid); let rec=state.individualPayrollRecords.find(r=>r.staffId===sid&&r.month===month); if(staff && rec) printWithHeader(`Bulletin ${staff.name}`, `<table><tr><td>Employé</td><td>${staff.name}</td></tr><tr><td>Mois</td><td>${rec.month}</td></tr><tr><td>Net</td><td>${rec.net.toFixed(2)} USD</td></tr></table>`); })); document.querySelectorAll('.whatsapp-bulletin-btn').forEach(btn=>btn.addEventListener('click',()=>{ let sid=parseInt(btn.dataset.id), month=btn.dataset.month; let staff=state.staffMembers.find(s=>s.id===sid); let rec=state.individualPayrollRecords.find(r=>r.staffId===sid&&r.month===month); if(staff && rec && staff.phone) sendWhatsApp(staff.phone, `🏫 *MIAC PLUS* - PAIE\n👤 ${staff.name}\n📅 ${rec.month}\n💰 Net: ${rec.net.toFixed(2)} USD\n✅ Payé.\n*La Direction*`); })); document.querySelectorAll('.delete-payroll-btn').forEach(btn=>btn.addEventListener('click',()=>{ let sid=parseInt(btn.dataset.id), month=btn.dataset.month; if(confirm("Supprimer ?")){ state.individualPayrollRecords=state.individualPayrollRecords.filter(r=>!(r.staffId===sid&&r.month===month)); saveAll(); renderComptaAll(); } })); document.getElementById('bulkPayBtn')?.addEventListener('click',()=>{ state.staffMembers.forEach(staff=>{ if(!state.individualPayrollRecords.find(r=>r.staffId===staff.id&&r.month===month)){ let adv=parseFloat(document.getElementById(`adv_${staff.id}`).value)||0; state.individualPayrollRecords.push({staffId:staff.id,month,brut:staff.salary,avance:adv,net:staff.salary-adv,paidDate:new Date().toISOString().slice(0,10)}); } }); saveAll(); renderComptaAll(); }); }
+        function renderStaffPayrollHistory(){ let cont=document.getElementById('staffPayrollHistoryContainer'); if(cont) cont.innerHTML=state.individualPayrollRecords.length?`<table><thead><tr><th>Employé</th><th>Mois</th><th>Net</th></tr></thead><tbody>${state.individualPayrollRecords.map(r=>{ let s=state.staffMembers.find(s=>s.id===r.staffId); return `<tr><td>${s?.name||'?'}</td><td>${r.month}</td><td>${r.net} USD</td></tr>`; }).join('')}</tbody></table>`:'<p>Aucun</p>'; }
+        function renderPaymentClassFilter(){ let cls=document.getElementById('paymentClassSelect')?.value, term=document.getElementById('searchStudent')?.value.toLowerCase()||''; let filtered=state.students.filter(s=>(!cls||s.class===cls)&&s.name.toLowerCase().includes(term)); let sel=document.getElementById('paymentStudentSelect'); if(sel) sel.innerHTML=filtered.map(s=>`<option value="${s.id}">${s.name} - ${s.class}</option>`).join(''); }
+        function renderPaymentHistory(){ let cont=document.getElementById('paymentHistoryList'); if(cont) cont.innerHTML=`<table><thead><tr><th>Date</th><th>Élève</th><th>USD</th><th>Rubrique</th><th></th></tr></thead><tbody>${state.payments.slice().reverse().map(p=>{ let s=state.students.find(s=>s.id===p.studentId); return `<tr><td>${p.date}</td><td>${s?.name||'?'}</td><td>${p.amountUSD.toFixed(2)}</td><td>${p.description||'-'}</td><td><button class="del-payment" data-id="${p.id}">🗑️</button></td></tr>`; }).join('')}</tbody></table>`; }
+        function renderCaisseSituation(){ let entrees=state.payments.reduce((s,p)=>s+p.amountUSD,0), sorties=state.otherExpenses.reduce((s,e)=>s+e.amountUSD,0)+state.transports.reduce((s,t)=>s+t.amountUSD,0)+state.individualPayrollRecords.reduce((s,r)=>s+r.net,0); document.getElementById('caisseSituation').innerHTML=`<table><tr><th>Entrées</th><td>${entrees.toFixed(2)} USD</td></tr><tr><th>Sorties</th><td>${sorties.toFixed(2)} USD</td></tr><tr><th>Solde</th><td style="font-weight:bold;color:${entrees-sorties>=0?'green':'red'}">${(entrees-sorties).toFixed(2)} USD</td></tr></table>`; }
+        function renderLogisticsTable(){ let cont=document.getElementById('logisticsTableContainer'); if(cont) cont.innerHTML=`<table><thead><tr><th>Article</th><th>Type</th><th>Qté</th><th>Total</th><th></th></tr></thead><tbody>${state.logistics.map((l,i)=>`<tr><td>${l.item}</td><td>${l.type}</td><td>${l.qty}</td><td>${(l.qty*l.price).toFixed(2)}</td><td><button class="del-log" data-idx="${i}">🗑️</button></td></tr>`).join('')}</tbody></table>`; }
+        function renderTransportTable(){ let cont=document.getElementById('transportTableContainer'); if(cont) cont.innerHTML=`<table><thead><tr><th>Date</th><th>Nom</th><th>USD</th><th></th></tr></thead><tbody>${state.transports.map((t,i)=>`<tr><td>${t.date}</td><td>${t.name}</td><td>${t.amountUSD.toFixed(2)}</td><td><button class="del-transport" data-idx="${i}">🗑️</button></td></tr>`).join('')}</tbody></table>`; document.getElementById('totalTransports').innerText=state.transports.reduce((s,t)=>s+t.amountUSD,0).toFixed(2); }
+        function renderExpenseTable(){ let cont=document.getElementById('expenseTableContainer'); if(cont) cont.innerHTML=`<table><thead><tr><th>Date</th><th>Motif</th><th>USD</th><th></th></tr></thead><tbody>${state.otherExpenses.map((e,i)=>`<tr><td>${e.date}</td><td>${e.motif}</td><td>${e.amountUSD.toFixed(2)}</td><td><button class="del-expense" data-idx="${i}">🗑️</button></td></tr>`).join('')}</tbody></table>`; document.getElementById('totalExpenses').innerText=state.otherExpenses.reduce((s,e)=>s+e.amountUSD,0).toFixed(2); }
+        function renderDailyReportTable(){ let today=new Date().toISOString().slice(0,10); let entrees=state.payments.filter(p=>p.date===today).reduce((s,p)=>s+p.amountUSD,0); document.getElementById('dailyReportTableContainer').innerHTML=`<table><tr><th>Entrées jour</th><td>${entrees.toFixed(2)} USD</td></tr><tr><th>Effectif</th><td>${state.students.length}</td></tr></table>`; }
+        function renderArchivesCompta(){ document.getElementById('dailyArchivesList').innerHTML = state.dailyReportsArchive.map(a=>`<span class="badge">${a.date}</span>`).join('')||'<p>Aucune</p>'; }
+        function sendAutoReport() { if(state.promoteurPhone) { let today=new Date().toISOString().slice(0,10); let entreesJour=state.payments.filter(p=>p.date===today).reduce((s,p)=>s+p.amountUSD,0); let rapport=`📊 *MIAC PLUS* RAPPORT JOURNALIER\n📅 ${formatDateFR(new Date())}\n🔹 Entrées: ${entreesJour.toFixed(2)} USD\n👥 Effectif: ${state.students.length}\n*Généré automatiquement.*`; sendWhatsApp(state.promoteurPhone, rapport); state.dailyReportsArchive.push({date:today}); saveAll(); } }
+
+        // Écouteurs (délégation globale pour les boutons dynamiques)
+        document.addEventListener('click', (e) => {
+            if(e.target.classList.contains('del-log')){ let idx=e.target.dataset.idx; if(idx!==undefined && confirm("Supprimer ?")){ state.logistics.splice(parseInt(idx),1); saveAll(); renderComptaAll(); } }
+            if(e.target.classList.contains('del-transport')){ let idx=e.target.dataset.idx; if(idx!==undefined && confirm("Supprimer ?")){ state.transports.splice(parseInt(idx),1); saveAll(); renderComptaAll(); } }
+            if(e.target.classList.contains('del-expense')){ let idx=e.target.dataset.idx; if(idx!==undefined && confirm("Supprimer ?")){ state.otherExpenses.splice(parseInt(idx),1); saveAll(); renderComptaAll(); } }
+            if(e.target.classList.contains('del-payment')){ let id=parseInt(e.target.dataset.id); if(confirm("Supprimer ?")){ state.payments=state.payments.filter(p=>p.id!==id); saveAll(); renderComptaAll(); } }
+        });
+
+        // Attachement des événements fixes
+        function attachAllEvents() {
+            // Inscription
+            document.getElementById('studentPhotoFile')?.addEventListener('change', (e) => { const file = e.target.files[0]; if(file) { const reader = new FileReader(); reader.onload = (ev) => { capturedPhotoData = ev.target.result; document.getElementById('photoPreview').innerHTML = `<img src="${capturedPhotoData}" class="photo-preview">`; }; reader.readAsDataURL(file); } });
+            document.getElementById('submitInscriptionBtn')?.addEventListener('click',()=>{ let name=document.getElementById('studentName').value, cls=document.getElementById('studentClass').value; if(!name||!cls) return alert("Nom et classe requis"); state.students.push({id:Date.now(),name,sexe:document.getElementById('studentSexe').value,class:cls,option:document.getElementById('studentOption').value,parentName:document.getElementById('parentName').value,parentPhone:document.getElementById('parentPhone').value,parentAddress:document.getElementById('parentAddress').value,totalFees:parseFloat(document.getElementById('totalFees').value)||null,photo:capturedPhotoData||null}); saveAll(); renderInscriptionAll(); renderComptaAll(); renderPedagoAll(); capturedPhotoData=null; document.getElementById('photoPreview').innerHTML=''; alert("✅ Inscrit !"); });
+            document.getElementById('sendToParentBtn')?.addEventListener('click',()=>{ let phone=document.getElementById('parentPhone').value, name=document.getElementById('studentName').value, cls=document.getElementById('studentClass').value; if(phone) sendWhatsApp(phone, `🏫 *MIAC PLUS* - INSCRIPTION CONFIRMÉE\n👤 ${name}\n📚 ${cls}\n📅 ${formatDateFR(new Date())}\n✅ Bienvenue.\n*La Direction*`); else alert("Tél requis"); });
+            document.getElementById('printInscriptionBtn')?.addEventListener('click',()=>{ let data = { name: document.getElementById('studentName').value, cls: document.getElementById('studentClass').value, sexe: document.getElementById('studentSexe').value, parent: document.getElementById('parentName').value, phone: document.getElementById('parentPhone').value }; printWithHeader("Fiche inscription", `<table><tr><td>Nom</td><td>${data.name}</td></tr><tr><td>Classe</td><td>${data.cls}</td></tr><tr><td>Sexe</td><td>${data.sexe}</td></tr><tr><td>Parent</td><td>${data.parent}</td></tr><tr><td>Tél</td><td>${data.phone}</td></tr></table>`); });
+            document.getElementById('openAddStaffBtn')?.addEventListener('click',()=>document.getElementById('addStaffForm').style.display='grid');
+            document.getElementById('saveStaffBtn')?.addEventListener('click',()=>{ let n=document.getElementById('staffName').value; if(n){ state.staffMembers.push({id:Date.now(),name:n,category:document.getElementById('staffCategory').value,role:document.getElementById('staffRole').value,phone:document.getElementById('staffPhone').value,salary:parseFloat(document.getElementById('staffSalary').value)||0}); saveAll(); renderInscriptionAll(); renderComptaAll(); renderPedagoAll(); document.getElementById('addStaffForm').style.display='none'; } });
+            document.getElementById('cancelStaffBtn')?.addEventListener('click',()=>document.getElementById('addStaffForm').style.display='none');
+            document.getElementById('sendMassWhatsAppBtn')?.addEventListener('click',()=>{ let type=document.getElementById('messageType').value, sujet=document.getElementById('messageSubject').value, corps=document.getElementById('commMessage').value; let msg=`🏫 *MIAC PLUS* - ${type}\n📋 ${sujet}\n📅 ${formatDateFR(new Date())}\n\n${corps}\n\n*La Direction*`; let c=0; document.querySelectorAll('.parent-cb:checked').forEach(cb=>{ if(cb.dataset.phone){ sendWhatsApp(cb.dataset.phone,msg); c++; } }); if(c){ state.lastMsgNum++; state.messages.push({num:state.lastMsgNum,date:new Date().toISOString(),type,sujet}); saveAll(); renderMessageHistory(); } });
+            document.getElementById('printMessageBtn')?.addEventListener('click',()=>{ let last=state.messages[state.messages.length-1]; if(last) printWithHeader("Message parents", `<p>${last.type} - ${last.subject}</p>`); });
+            document.getElementById('sendStaffWhatsAppBtn')?.addEventListener('click',()=>{ let type=document.getElementById('commInterneType').value, objet=document.getElementById('commInterneObjet').value, corps=document.getElementById('commInterneMessage').value; let msg=`🏫 *MIAC PLUS* - COMMUNIQUÉ INTERNE\n📢 ${type}\n📋 ${objet}\n📅 ${formatDateFR(new Date())}\n\n${corps}\n\n*La Direction*`; let c=0; document.querySelectorAll('.staff-cb-ins:checked').forEach(cb=>{ if(cb.dataset.phone){ sendWhatsApp(cb.dataset.phone,msg); c++; } }); if(c){ state.staffCommunications.push({date:new Date().toISOString(),type}); saveAll(); renderStaffCommHistory(); } });
+            document.getElementById('printStaffCommBtn')?.addEventListener('click',()=>{ let last=state.staffCommunications[state.staffCommunications.length-1]; if(last) printWithHeader("Communiqué interne", `<p>${last.type}</p>`); });
+            document.getElementById('selectAllParentsBtn')?.addEventListener('click',()=>document.querySelectorAll('.parent-cb').forEach(cb=>cb.checked=true));
+            document.getElementById('deselectAllParentsBtn')?.addEventListener('click',()=>document.querySelectorAll('.parent-cb').forEach(cb=>cb.checked=false));
+            document.getElementById('selectAllStaffBtn')?.addEventListener('click',()=>document.querySelectorAll('.staff-cb-ins').forEach(cb=>cb.checked=true));
+            document.getElementById('deselectAllStaffBtn')?.addEventListener('click',()=>document.querySelectorAll('.staff-cb-ins').forEach(cb=>cb.checked=false));
+            document.getElementById('saveExchangeRateBtn')?.addEventListener('click',()=>{ let v=parseFloat(document.getElementById('exchangeRateInput').value); if(v>0){ state.exchangeRate=v; saveAll(); } });
+            document.getElementById('saveDefaultFeesBtn')?.addEventListener('click',()=>{ let v=parseFloat(document.getElementById('globalDefaultFees').value); if(!isNaN(v)) state.defaultAnnualFees=v; saveAll(); });
+            document.getElementById('savePromoteurPhoneBtn')?.addEventListener('click',()=>{ state.promoteurPhone=document.getElementById('globalPromoteurPhone').value; saveAll(); });
+            document.getElementById('changePwdInscription')?.addEventListener('click',()=>{ let np=document.getElementById('newPwdInscription').value; if(np){ state.modulePasswords.inscription=np; saveAll(); alert("✅ Modifié"); } });
+            document.getElementById('changePwdCompta')?.addEventListener('click',()=>{ let np=document.getElementById('newPwdCompta').value; if(np){ state.modulePasswords.compta=np; saveAll(); alert("✅ Modifié"); } });
+            document.getElementById('changePwdPedago')?.addEventListener('click',()=>{ let np=document.getElementById('newPwdPedago').value; if(np){ state.modulePasswords.pedago=np; saveAll(); alert("✅ Modifié"); } });
+            document.getElementById('printAllClassesBtn')?.addEventListener('click',()=>{ let all=''; for(let cls of classList){ let list=state.students.filter(s=>s.class===cls); if(list.length) all+=`<h3>${cls}</h3><table><thead><tr><th>Photo</th><th>Nom</th><th>Sexe</th><th>Parent</th><th>Tél</th></tr></thead><tbody>${list.map(s=>`<tr><td>${s.photo?'✓':'📷'}</td><td>${s.name}</td><td>${s.sexe}</td><td>${s.parentName}</td><td>${s.parentPhone}</td></tr>`).join('')}</tbody></table>`; } printWithHeader("Liste complète", all); });
+            document.getElementById('clearMessagesBtn')?.addEventListener('click',()=>{ if(confirm("Vider ?")){ state.messages=[]; saveAll(); renderMessageHistory(); } });
+            document.getElementById('clearStaffCommHistoryBtn')?.addEventListener('click',()=>{ if(confirm("Vider ?")){ state.staffCommunications=[]; saveAll(); renderStaffCommHistory(); } });
+            // Compta
+            document.getElementById('addLogBtn')?.addEventListener('click',()=>{ let item=document.getElementById('logItem').value; if(item){ state.logistics.push({item,type:document.getElementById('logType').value,qty:parseInt(document.getElementById('logQty').value)||1,price:parseFloat(document.getElementById('logPrice').value)||0,date:new Date().toISOString().slice(0,10)}); saveAll(); renderComptaAll(); } });
+            document.getElementById('addTransportBtn')?.addEventListener('click',()=>{ let name=document.getElementById('transportName').value, amt=parseFloat(document.getElementById('transportAmount').value); if(name&&amt){ state.transports.push({name,amountUSD:convertToUSD(amt,document.getElementById('transportCurrency').value),date:document.getElementById('transportDate').value||new Date().toISOString().slice(0,10)}); saveAll(); renderComptaAll(); } });
+            document.getElementById('addExpenseBtn')?.addEventListener('click',()=>{ let motif=document.getElementById('expenseMotif').value, amt=parseFloat(document.getElementById('expenseAmount').value); if(motif&&amt){ state.otherExpenses.push({motif,amountUSD:convertToUSD(amt,document.getElementById('expenseCurrency').value),date:document.getElementById('expenseDate').value||new Date().toISOString().slice(0,10)}); saveAll(); renderComptaAll(); } });
+            document.getElementById('recordPaymentBtn')?.addEventListener('click',()=>{ let sid=parseInt(document.getElementById('paymentStudentSelect').value), amt=parseFloat(document.getElementById('paymentAmountLocal').value); if(sid&&amt){ let payment={id:Date.now(),studentId:sid,amountUSD:convertToUSD(amt,document.getElementById('currencyType').value),date:document.getElementById('paymentDate').value||new Date().toISOString().slice(0,10),description:document.getElementById('paymentDesc').value}; state.payments.push(payment); saveAll(); renderComptaAll(); showPaymentActionDialog(payment); } else alert("Élève et montant requis"); });
+            document.getElementById('sendManualReportBtn')?.addEventListener('click',sendAutoReport);
+            document.getElementById('saveExchangeRateCompta')?.addEventListener('click',()=>{ let v=parseFloat(document.getElementById('exchangeRateCompta').value); if(v>0){ state.exchangeRate=v; saveAll(); } });
+            document.getElementById('saveDefaultFeesCompta')?.addEventListener('click',()=>{ let v=parseFloat(document.getElementById('defaultAnnualFeesCompta').value); if(!isNaN(v)) state.defaultAnnualFees=v; saveAll(); });
+            document.getElementById('savePromoteurCompta')?.addEventListener('click',()=>{ state.promoteurPhone=document.getElementById('promoteurPhoneCompta').value; saveAll(); });
+            document.getElementById('printStudentListCompta')?.addEventListener('click',()=>{ let all=''; for(let cls of classList){ let list=state.students.filter(s=>s.class===cls); if(list.length) all+=`<h3>${cls}</h3><table><thead><tr><th>Nom</th><th>Frais</th><th>Payé</th><th>Reste</th></tr></thead><tbody>${list.map(s=>{ let f=s.totalFees||state.defaultAnnualFees, p=getTotalPaidByStudent(s.id); return `<tr><td>${s.name}</td><td>${f}</td><td>${p}</td><td>${(f-p).toFixed(2)}</td></tr>`; }).join('')}</tbody></table>`; } printWithHeader("Suivi financier", all); });
+            document.getElementById('printStaffListCompta')?.addEventListener('click',()=>{ printWithHeader("Personnel", document.getElementById('staffListCompta').innerHTML); });
+            document.getElementById('printPaymentsHistoryBtn')?.addEventListener('click',()=>{ printWithHeader("Historique paiements", document.getElementById('paymentHistoryList').innerHTML); });
+            document.getElementById('clearArchivesBtn')?.addEventListener('click',()=>{ state.dailyReportsArchive=[]; saveAll(); renderArchivesCompta(); });
+            document.getElementById('printArchivesBtn')?.addEventListener('click',()=>{ printWithHeader("Archives", document.getElementById('dailyArchivesList').innerHTML); });
+            // Pedago
+            document.getElementById('addCourseBtn')?.addEventListener('click',()=>{ let name=document.getElementById('newCourseName').value, max=parseFloat(document.getElementById('newCourseMax').value), coef=parseFloat(document.getElementById('newCourseCoef').value); if(name){ state.courses.push({name,max,coef}); saveAll(); renderCoursesListPed(); } });
+            document.getElementById('loadGradeTableBtn')?.addEventListener('click',()=>{ let cls=document.getElementById('gradeClassSelect').value, period=document.getElementById('gradePeriodSelect').value; let classStudents=state.students.filter(s=>s.class===cls); let html=`<table><thead><tr><th>Élève</th>${state.courses.map(c=>`<th>${c.name}</th>`).join('')}<th></th></tr></thead><tbody>`; classStudents.forEach(s=>{ html+=`<tr><td>${s.name}</td>${state.courses.map(c=>{ let g=state.grades.find(g=>g.studentId===s.id&&g.period===period&&g.courseName===c.name); return `<td><input type="number" class="grade-input-ped" data-student="${s.id}" data-course="${c.name}" data-period="${period}" value="${g?g.score:''}" step="0.01" style="width:70px"></td>`; }).join('')}<td><button class="save-grade-row" data-student="${s.id}" data-period="${period}">💾</button></td></tr>`; }); html+=`</tbody></table>`; document.getElementById('gradeTableContainer').innerHTML=html; document.querySelectorAll('.save-grade-row').forEach(btn=>btn.addEventListener('click',()=>{ let sid=parseInt(btn.dataset.student), period=btn.dataset.period; document.querySelectorAll(`.grade-input-ped[data-student="${sid}"][data-period="${period}"]`).forEach(inp=>{ let course=inp.dataset.course, score=parseFloat(inp.value); if(!isNaN(score)){ let idx=state.grades.findIndex(g=>g.studentId===sid&&g.period===period&&g.courseName===course); if(idx>-1) state.grades[idx].score=score; else state.grades.push({studentId:sid,period,courseName:course,score}); } }); saveAll(); alert("✅ Notes sauvegardées"); })); });
+            document.getElementById('validateGradesBtn')?.addEventListener('click',()=>{ alert("✅ Notes validées."); });
+            document.getElementById('archiveCurrentPeriodBtn')?.addEventListener('click',()=>{ state.reportsArchive.push({date:new Date().toISOString(),period:document.getElementById('gradePeriodSelect').value}); saveAll(); alert("📦 Archivé."); });
+            document.getElementById('showFullSynthBtn')?.addEventListener('click',()=>{ let cls=document.getElementById('synthClassSelect').value, period=document.getElementById('synthPeriodSelect').value; let students=cls?state.students.filter(s=>s.class===cls):state.students; let html=`<table><thead><tr><th>Classe</th><th>Élève</th>${state.courses.map(c=>`<th>${c.name}</th>`).join('')}<th>Moy</th><th>%</th><th>Rang</th></tr></thead><tbody>`; let data=students.map(s=>{ let totalPts=0, totalCoef=0, notes=[]; state.courses.forEach(c=>{ let g=state.grades.find(g=>g.studentId===s.id&&g.period===period&&g.courseName===c.name); let val=g?g.score:'-'; notes.push(val); if(val!=='-'&&!isNaN(parseFloat(val))){ totalPts+=(parseFloat(val)/c.max)*20*c.coef; totalCoef+=c.coef; } }); let moy=totalCoef>0?totalPts/totalCoef:0; return {class:s.class,name:s.name,notes,moyenne:moy,pourcentage:(moy/20)*100}; }); data.sort((a,b)=>b.pourcentage-a.pourcentage); data.forEach((d,i)=>{ html+=`<tr><td>${d.class}</td><td>${d.name}</td>${d.notes.map(n=>`<td>${n}</td>`).join('')}<td>${d.moyenne.toFixed(2)}</td><td>${d.pourcentage.toFixed(1)}%</td><td>${i+1}</td></tr>`; }); html+=`</tbody></table>`; document.getElementById('fullSynthResultArea').innerHTML=html; });
+            document.getElementById('printFullSynthBtn')?.addEventListener('click',()=>{ printWithHeader("Synthèse", document.getElementById('fullSynthResultArea').innerHTML); });
+            document.getElementById('showResultsBtn')?.addEventListener('click',()=>{ let cls=document.getElementById('resultClassSelect').value, period=document.getElementById('resultPeriodSelect').value; if(!cls) return; let students=state.students.filter(s=>s.class===cls); let html=`<table><thead><tr><th>Élève</th>${state.courses.map(c=>`<th>${c.name}</th>`).join('')}<th>Moy</th><th>%</th><th>Rang</th></tr></thead><tbody>`; let data=students.map(s=>{ let totalPts=0, totalCoef=0, notes=[]; state.courses.forEach(c=>{ let g=state.grades.find(g=>g.studentId===s.id&&g.period===period&&g.courseName===c.name); let val=g?g.score:'-'; notes.push(val); if(val!=='-'&&!isNaN(parseFloat(val))){ totalPts+=(parseFloat(val)/c.max)*20*c.coef; totalCoef+=c.coef; } }); let moy=totalCoef>0?totalPts/totalCoef:0; return {name:s.name,notes,moyenne:moy,pourcentage:(moy/20)*100}; }); data.sort((a,b)=>b.pourcentage-a.pourcentage); data.forEach((d,i)=>{ html+=`<tr><td>${d.name}</td>${d.notes.map(n=>`<td>${n}</td>`).join('')}<td>${d.moyenne.toFixed(2)}</td><td>${d.pourcentage.toFixed(1)}%</td><td>${i+1}</td></tr>`; }); html+=`</tbody></table>`; document.getElementById('resultsDisplayArea').innerHTML=html; });
+            document.getElementById('printResultsBtn')?.addEventListener('click',()=>{ printWithHeader("Résultats", document.getElementById('resultsDisplayArea').innerHTML); });
+            document.getElementById('printPedagoStudentsBtn')?.addEventListener('click',()=>{ let all=''; for(let cls of classList){ let list=state.students.filter(s=>s.class===cls); if(list.length) all+=`<h3>${cls}</h3><table><thead><tr><th>Nom</th><th>Sexe</th></tr></thead><tbody>${list.map(s=>`<tr><td>${s.name}</td><td>${s.sexe}</td></tr>`).join('')}</tbody></table>`; } printWithHeader("Liste élèves", all); });
+            document.getElementById('printPedagoStaffBtn')?.addEventListener('click',()=>{ printWithHeader("Personnel", document.getElementById('staffListPedago').innerHTML); });
+            document.getElementById('clearAllReportsBtn')?.addEventListener('click',()=>{ if(confirm("Vider ?")){ state.reportsArchive=[]; saveAll(); document.getElementById('reportsArchiveList').innerHTML=''; } });
+            // Initialisation des listes déroulantes
+            document.getElementById('paymentClassSelect').innerHTML = classList.map(c=>`<option>${c}</option>`).join('');
+            document.getElementById('paymentClassSelect')?.addEventListener('change',renderPaymentClassFilter);
+            document.getElementById('searchStudent')?.addEventListener('input',renderPaymentClassFilter);
+        }
+
+        function renderPedagoAll(){ renderPedagoStudentLists(); renderStaffListPedago(); renderCoursesListPed(); renderClassSelectorsPed(); }
+        function renderPedagoStudentLists(){ let html=''; for(let cls of classList){ let arr=state.students.filter(s=>s.class===cls); if(arr.length) html+=`<div class="class-group"><div class="class-header">${cls}</div><table><thead><tr><th>Photo</th><th>Nom</th><th>Sexe</th></tr></thead><tbody>${arr.map(s=>`<tr><td>${s.photo?`<img src="${s.photo}" class="student-photo">`:'📷'}</td><td>${s.name}</td><td>${s.sexe}</td></tr>`).join('')}</tbody></table></div>`; } document.getElementById('groupedStudentListPedago').innerHTML=html||'<p>Aucun</p>'; }
+        function renderStaffListPedago(){ document.getElementById('staffListPedago').innerHTML = state.staffMembers.length?`<table><thead><tr><th>Nom</th><th>Fonction</th></tr></thead><tbody>${state.staffMembers.map(s=>`<tr><td>${s.name}</td><td>${s.role||s.category}</td></tr>`).join('')}</tbody></table>`:'<p>Aucun</p>'; }
+        function renderCoursesListPed(){ let cont=document.getElementById('coursesList'); if(cont) cont.innerHTML=state.courses.map((c,i)=>`<span class="badge">${c.name} (coef ${c.coef}) <button class="del-course" data-idx="${i}">🗑️</button></span>`).join(''); document.querySelectorAll('.del-course').forEach(btn=>btn.addEventListener('click',()=>{ state.courses.splice(parseInt(btn.dataset.idx),1); saveAll(); renderCoursesListPed(); })); }
+        function renderClassSelectorsPed(){ let opts=classList.map(c=>`<option>${c}</option>`).join(''); document.getElementById('gradeClassSelect').innerHTML=opts; document.getElementById('resultClassSelect').innerHTML=opts; document.getElementById('synthClassSelect').innerHTML=`<option value="">Toutes</option>`+opts; }
+
+        function scheduleDailyReport() { let now=new Date(), target=new Date(); target.setHours(12,30,0,0); if(now>target) target.setDate(target.getDate()+1); setTimeout(()=>{ sendAutoReport(); scheduleDailyReport(); }, target-now); }
+        scheduleDailyReport();
+
+        document.querySelectorAll('.module-btn').forEach(btn=>btn.addEventListener('click',()=>{ showModule(btn.dataset.module); }));
+        document.getElementById('exitToHomeBtn').addEventListener('click',()=>{ document.getElementById('mainApp').style.display='none'; document.getElementById('homeScreen').style.display='flex'; unlockedModules={inscription:false,compta:false,pedago:false}; currentModule=null; });
+        document.getElementById('startAppBtn').addEventListener('click',()=>{ document.getElementById('homeScreen').style.display='none'; document.getElementById('mainApp').style.display='block'; showModule('inscription'); });
+
+        loadAll();
+        attachAllEvents();
+        renderInscriptionAll(); renderComptaAll(); renderPedagoAll();
+        setInterval(saveAll, 5000);
+    })();
+</script>
+</body>
+</html>
